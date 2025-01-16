@@ -137,8 +137,17 @@ private:
   GLuint m_id{};
 };
 
-const float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
-                          0.0f,  0.0f,  0.5f, 0.0f};
+float vertices[] = {
+    0.5f,  0.5f,  0.0f, // top right
+    0.5f,  -0.5f, 0.0f, // bottom right
+    -0.5f, -0.5f, 0.0f, // bottom left
+    -0.5f, 0.5f,  0.0f  // top left
+};
+
+unsigned int indices[] = {
+    0, 1, 3, // first triangle
+    1, 2, 3  // second triangle
+};
 
 int main() {
   // Initialize ImGui
@@ -188,6 +197,7 @@ int main() {
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
   Buffer VBO(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  Buffer EBO(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
   Shader vertexShader(vertexShaderSource, GL_VERTEX_SHADER);
   Shader fragmentShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
   Program shaderProgram(vertexShader, fragmentShader);
@@ -212,7 +222,8 @@ int main() {
 
     glUseProgram(shaderProgram.id());
     glBindVertexArray(VAO.id());
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO.id());
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // Render ImGui
     ImGui::Render();
