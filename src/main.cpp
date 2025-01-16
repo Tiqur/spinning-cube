@@ -27,17 +27,21 @@ void processInput(GLFWwindow *window) {
 const char *vertexShaderSource = R"(
     #version 330 core
     layout(location = 0) in vec3 aPos;
+    layout(location = 1) in vec3 aColor;
+    out vec3 fColor;
     uniform mat4 transform;
     void main() {
         gl_Position = transform * vec4(aPos, 1.0);
+        fColor = aColor;
     }
 )";
 
 const char *fragmentShaderSource = R"(
     #version 330 core
+    in vec3 fColor;
     out vec4 FragColor;
     void main() {
-        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+        FragColor = vec4(fColor, 1.0f);
     }
 )";
 
@@ -147,14 +151,15 @@ private:
 };
 
 float vertices[] = {
-    0.5f,  0.5f,  -0.5f, //
-    0.5f,  -0.5f, -0.5f, //
-    -0.5f, -0.5f, -0.5f, //
-    -0.5f, 0.5f,  -0.5f, //
-    0.5f,  0.5f,  0.5f,  //
-    0.5f,  -0.5f, 0.5f,  //
-    -0.5f, -0.5f, 0.5f,  //
-    -0.5f, 0.5f,  0.5f   //
+    // Positions        // Colors (RGB)
+    0.5f,  0.5f,  -0.5f, 1.0f, 0.0f, 0.0f,
+    0.5f,  -0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+    -0.5f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f,
+    0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
+    0.5f,  -0.5f, 0.5f,  0.0f, 1.0f, 1.0f,
+    -0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 1.0f,
+    -0.5f, 0.5f,  0.5f,  0.5f, 0.5f, 0.5f,
 };
 
 unsigned int indices[] = {
@@ -229,8 +234,15 @@ int main() {
   VAO.bind();
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO.id());
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void *)0);
+
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float),
+                        (void *)(3 * sizeof(float)));
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LESS);
 
   // Main render loop
   while (!glfwWindowShouldClose(window)) {
@@ -254,11 +266,12 @@ int main() {
     // Render OpenGL
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(shaderProgram.id());
     glBindVertexArray(VAO.id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO.id());
-    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(float) * 3,
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(unsigned int),
                    GL_UNSIGNED_INT, 0);
 
     glm::mat4 rotationMatrix =
