@@ -70,6 +70,14 @@ public:
     glAttachShader(m_id, vertexShader.id());
     glAttachShader(m_id, fragmentShader.id());
     glLinkProgram(m_id);
+
+    GLint success;
+    glGetProgramiv(m_id, GL_LINK_STATUS, &success);
+    if (!success) {
+      char infoLog[512];
+      glGetProgramInfoLog(m_id, 512, NULL, infoLog);
+      cout << "ERROR::PROGRAM::LINKING_FAILED\n" << infoLog << endl;
+    }
   }
 
   ~Program() {
@@ -150,6 +158,8 @@ int main() {
     glfwTerminate();
     return -1;
   }
+
+  // Make the OpenGL context current
   glfwMakeContextCurrent(window);
 
   std::cout << "Initializing ImGui GLFW backend..." << std::endl;
@@ -163,9 +173,6 @@ int main() {
     std::cerr << "Failed to initialize ImGui OpenGL backend!" << std::endl;
     return -1;
   }
-
-  // Make the OpenGL context current
-  glfwMakeContextCurrent(window);
 
   // Initialize GLEW
   glewExperimental = GL_TRUE; // Ensure GLEW uses modern OpenGL techniques
@@ -219,11 +226,16 @@ int main() {
     glfwPollEvents();
   }
 
+  // Unbind OpenGL objects
+  glBindVertexArray(0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glUseProgram(0);
+
   // Clean up and exit
-  glfwDestroyWindow(window);
-  glfwTerminate();
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
+  glfwDestroyWindow(window);
+  glfwTerminate();
   return 0;
 }
