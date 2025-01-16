@@ -147,15 +147,29 @@ private:
 };
 
 float vertices[] = {
-    0.5f,  0.5f,  0.0f, // top right
-    0.5f,  -0.5f, 0.0f, // bottom right
-    -0.5f, -0.5f, 0.0f, // bottom left
-    -0.5f, 0.5f,  0.0f  // top left
+    0.5f,  0.5f,  -0.5f, //
+    0.5f,  -0.5f, -0.5f, //
+    -0.5f, -0.5f, -0.5f, //
+    -0.5f, 0.5f,  -0.5f, //
+    0.5f,  0.5f,  0.5f,  //
+    0.5f,  -0.5f, 0.5f,  //
+    -0.5f, -0.5f, 0.5f,  //
+    -0.5f, 0.5f,  0.5f   //
 };
 
 unsigned int indices[] = {
-    0, 1, 3, // first triangle
-    1, 2, 3  // second triangle
+    3, 0, 1, //
+    3, 2, 1, //
+    2, 1, 5, //
+    2, 6, 5, //
+    1, 0, 4, //
+    1, 5, 4, //
+    3, 2, 6, //
+    3, 7, 6, //
+    6, 5, 4, //
+    7, 6, 4, //
+    7, 4, 0, //
+    7, 3, 0, //
 };
 
 int main() {
@@ -244,7 +258,8 @@ int main() {
     glUseProgram(shaderProgram.id());
     glBindVertexArray(VAO.id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO.id());
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(float) * 3,
+                   GL_UNSIGNED_INT, 0);
 
     glm::mat4 rotationMatrix =
         glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 1.0f, 1.0f));
