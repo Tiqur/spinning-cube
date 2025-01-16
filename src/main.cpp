@@ -16,6 +16,122 @@ void processInput(GLFWwindow *window) {
     glfwSetWindowShouldClose(window, true);
 }
 
+const char *vertexShaderSource = R"(
+    #version 330 core
+    layout(location = 0) in vec3 aPos;
+    void main() {
+        gl_Position = vec4(aPos, 1.0);
+    }
+)";
+
+const char *fragmentShaderSource = R"(
+    #version 330 core
+    out vec4 FragColor;
+    void main() {
+        FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+    }
+)";
+
+class Shader {
+public:
+  Shader(const char *shaderSource, GLenum shaderType) {
+    cout << "Creating shader..." << endl;
+    m_id = glCreateShader(shaderType);
+    glShaderSource(m_id, 1, &shaderSource, NULL);
+    glCompileShader(m_id);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(m_id, GL_COMPILE_STATUS, &success);
+    if (!success) {
+      glGetShaderInfoLog(m_id, 512, NULL, infoLog);
+      cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << endl;
+    }
+  }
+
+  ~Shader() {
+    cout << "Deleting shader..." << endl;
+    if (m_id != 0) {
+      glDeleteShader(m_id);
+    }
+  }
+
+  GLuint id() const { return m_id; }
+
+private:
+  GLuint m_id{};
+};
+
+class Program {
+public:
+  Program(Shader vertexShader, Shader fragmentShader) {
+    cout << "Creating program..." << endl;
+    m_id = glCreateProgram();
+    glAttachShader(m_id, vertexShader.id());
+    glAttachShader(m_id, fragmentShader.id());
+    glLinkProgram(m_id);
+  }
+
+  ~Program() {
+    if (m_id != 0) {
+      cout << "Deleting program..." << endl;
+      glDeleteProgram(m_id);
+    }
+  }
+
+  GLuint id() const { return m_id; }
+
+private:
+  GLuint m_id{};
+};
+
+class Buffer {
+public:
+  Buffer(GLenum target, GLsizeiptr size, const void *data, GLenum usage) {
+    cout << "Creating buffer..." << endl;
+    glGenBuffers(1, &m_id);
+    glBindBuffer(target, m_id);
+    glBufferData(target, size, data, usage);
+  }
+
+  ~Buffer() {
+    if (m_id != 0) {
+      cout << "Deleting buffer..." << endl;
+      glDeleteBuffers(1, &m_id);
+    }
+  }
+
+  GLuint id() const { return m_id; }
+
+private:
+  GLuint m_id{};
+};
+
+class VertexArray {
+public:
+  VertexArray() {
+    cout << "Creating vertex array..." << endl;
+    glGenVertexArrays(1, &m_id);
+  }
+
+  void bind() { glBindVertexArray(m_id); }
+
+  ~VertexArray() {
+    if (m_id != 0) {
+      cout << "Deleting array..." << endl;
+      glDeleteVertexArrays(1, &m_id);
+    }
+  }
+
+  GLuint id() const { return m_id; }
+
+private:
+  GLuint m_id{};
+};
+
+const float vertices[] = {-0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
+                          0.0f,  0.0f,  0.5f, 0.0f};
+
 int main() {
   // Initialize ImGui
   std::cout << "Initializing ImGui..." << std::endl;
@@ -64,6 +180,18 @@ int main() {
   // Register the framebuffer size callback
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+  Buffer VBO(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  Shader vertexShader(vertexShaderSource, GL_VERTEX_SHADER);
+  Shader fragmentShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
+  Program shaderProgram(vertexShader, fragmentShader);
+
+  VertexArray VAO;
+  VAO.bind();
+
+  glBindBuffer(GL_ARRAY_BUFFER, VBO.id());
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
+  glEnableVertexAttribArray(0);
+
   // Main render loop
   while (!glfwWindowShouldClose(window)) {
     ImGui_ImplOpenGL3_NewFrame();
@@ -74,6 +202,10 @@ int main() {
     // Render OpenGL
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(shaderProgram.id());
+    glBindVertexArray(VAO.id());
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
     // Render ImGui
     ImGui::Render();
