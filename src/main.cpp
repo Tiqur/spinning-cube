@@ -3,6 +3,10 @@
 #include "imgui_impl_opengl3.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <cmath>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
 using std::cout, std::endl;
@@ -23,8 +27,9 @@ void processInput(GLFWwindow *window) {
 const char *vertexShaderSource = R"(
     #version 330 core
     layout(location = 0) in vec3 aPos;
+    uniform mat4 transform;
     void main() {
-        gl_Position = vec4(aPos, 1.0);
+        gl_Position = transform * vec4(aPos, 1.0);
     }
 )";
 
@@ -218,7 +223,19 @@ int main() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
+
+    static float angle = 0.0f;
+    static float rotationDegrees = 0.005f;
+    angle += rotationDegrees;
+
+    bool active = true;
+    float min = 0.0;
+    float max = 0.1;
+    ImGui::Begin("Settings", &active, ImGuiWindowFlags_MenuBar);
+    ImGui::SliderScalar("Rotation angle", ImGuiDataType_Float, &rotationDegrees,
+                        &min, &max, "%.2f degrees per frame");
+    ImGui::End();
 
     // Render OpenGL
     glClearColor(0.2f, 0.4f, 0.4f, 1.0f);
@@ -228,6 +245,13 @@ int main() {
     glBindVertexArray(VAO.id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO.id());
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    glm::mat4 rotationMatrix =
+        glm::rotate(glm::mat4(1.0f), angle, glm::vec3(1.0f, 1.0f, 1.0f));
+    GLint transformLoc = glGetUniformLocation(shaderProgram.id(), "transform");
+    glUseProgram(shaderProgram.id());
+    glUniformMatrix4fv(transformLoc, 1, GL_FALSE,
+                       glm::value_ptr(rotationMatrix));
 
     // Render ImGui
     ImGui::Render();
